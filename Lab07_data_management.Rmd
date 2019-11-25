@@ -1,0 +1,106 @@
+---
+title: "Data Management -- not to be submitted"
+output:
+  pdf_document:
+    keep_tex: true
+geometry: margin=1.5cm
+header-includes:
+   - \usepackage{booktabs}
+   - \usepackage{multicol}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# You don't have to submit this lab
+
+# Introduction
+
+I have downloaded three data sets from gapminder.org, located in the data folder (they have informative titles):
+
+ * co2_emissions_tonnes_per_person.csv
+ * energy_production_per_person.csv
+ * energy_use_per_person.csv
+
+```{r, message = FALSE}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+library(purrr)
+library(GGally)
+```
+
+# Read in the data sets and take a first look at them
+
+You'll end up with three separate data frames.  Use the `read_csv` function from the readr package and the `View` function.
+
+```{r}
+co2 <- read_csv("data/co2_emissions_tonnes_per_person.csv")
+View(co2)
+energy_production <- read_csv("data/energy_production_per_person.csv")
+View(energy_production)
+energy_use <- read_csv("data/energy_use_per_person.csv")
+View(energy_use)
+```
+
+# Pivot the data frames so that they have columns for country and year, and a column for co2, energy_production, and energy_use respectively.
+
+Use the `pivot_longer` function from the tidyr package.
+
+```{r}
+co2 <- co2 %>%
+   pivot_longer(-country, names_to = "year", values_to = "co2")
+energy_production <- energy_production %>%
+   pivot_longer(-country, names_to = "year", values_to = "energy_production")
+energy_use <- energy_use %>%
+   pivot_longer(-country, names_to = "year", values_to = "energy_use")
+```
+
+# Which 10 countries emitted the most co2 in 2010?  Which 10 countries produced the most energy in 2010?  Which 10 countries used the moest energy in 2010?
+
+Use the `filter` function from the dplyr package to select just the data from 2010, and then use either the `arrange` function and the `tail` function, or the `top_n` function (both from the dplyr package) to view the top 10.  Recall that you can use the `drop_na` function to drop rows with missing values.
+
+```{r}
+co2 %>% filter(year == 2010) %>% drop_na() %>% arrange(co2) %>% tail(10)
+co2 %>% filter(year == 2010) %>% top_n(10, co2)
+energy_production %>% filter(year == 2010) %>% drop_na() %>% arrange(energy_production) %>% tail(10)
+energy_production %>% filter(year == 2010) %>% top_n(10, energy_production)
+energy_use %>% filter(year == 2010) %>% drop_na() %>% arrange(energy_use) %>% tail(10)
+energy_use %>% filter(year == 2010) %>% top_n(10, energy_use)
+```
+
+# Which 10 countries emitted the least co2 in 2010?
+
+How could you do this using `top_n` by modifying the co2 variable so that that the "top n" values correspond to the countries with lowest emissions?
+
+```{r}
+co2 %>% filter(year == 2010) %>% drop_na() %>% arrange(co2) %>% head(10)
+co2 %>% filter(year == 2010) %>% top_n(10, -1 * co2)
+```
+
+# Merge the three data sets into one data set.  View the combined data to make sure it worked.
+
+This is necessary to examine relationships between co2 and energy use and production
+
+You will want to use one of the join family of functions (see `?join`).  You will need two calls to a join function, the first to join two of the data sets, and the second call to add the third data set in.
+
+```{r}
+all_data <- co2 %>%
+   full_join(energy_production) %>%
+   full_join(energy_use)
+View(all_data)
+```
+
+# Create a plot of co2 emissions for 2010 vs energy production for 2010, and a second plot showing co2 emissions for 2010 vs energy use for 2010.  Which relationship is stronger?
+
+```{r}
+ggplot(data = all_data %>% filter(year == 2010),
+       mapping = aes(x = energy_production, y = co2)) +
+   geom_point()
+
+ggplot(data = all_data %>% filter(year == 2010),
+       mapping = aes(x = energy_use, y = co2)) +
+   geom_point()
+```
